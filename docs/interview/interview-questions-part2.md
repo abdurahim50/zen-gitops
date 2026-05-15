@@ -1429,6 +1429,8 @@ Three independent enforcement layers — an accident requires bypassing all thre
 
 > "The critical mistake I've seen is teams using a single ArgoCD project for all environments. That means a dev team member with ArgoCD access can accidentally sync prod. Separate projects per environment, with separate role bindings, is how you enforce team ownership at the platform level rather than relying on discipline."
 
+> Cloud architecture and DR Q&A: [DevOps_Interview_Full_2026.md](./DevOps_Interview_Full_2026.md) (BS1, BS2).
+
 ---
 
 # Group H — Kubernetes Incident Response
