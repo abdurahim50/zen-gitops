@@ -30,8 +30,6 @@
 | **Logs** | Fluent Bit → Elasticsearch | *What happened?* — errors, events, messages |
 | **Metrics** | Prometheus → Grafana | *How is it performing?* — CPU, memory, request rates |
 
-> A complete observability stack adds **Tracing** (e.g. Jaeger/Tempo) as the third pillar — not covered in this branch but expect it to come up.
-
 ### Full Stack Architecture
 
 ```
@@ -950,7 +948,6 @@ Option B integrates better with the existing Prometheus/Grafana/Alertmanager sta
 | Can you rate() a gauge? | No — only counters (gauges can decrease) |
 | What is a counter reset? | When a counter restarts from 0 (pod restart); `rate()` handles this |
 | What is Loki? | Grafana's log aggregation system — indexes labels only, not log content |
-| What is Jaeger? | Distributed tracing system (the 3rd observability pillar) |
 | What is TSDB? | Time Series Database — how Prometheus stores metrics on disk |
 | What does `on:` do in PromQL? | Joins two metrics on specific labels only |
 | What is `absent()` used for? | Alert when a metric stops being reported (e.g. pod disappears) |
