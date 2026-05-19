@@ -162,21 +162,7 @@ Without this, the Kubernetes filter falls back to parsing metadata from the log 
 
 ---
 
-### Q: How does Fluent Bit avoid shipping its own logs to Elasticsearch?
 
-**Answer:**
-A `grep` filter drops any record where the Kubernetes `pod_name` label matches the Fluent Bit DaemonSet pod name pattern. In this project:
-
-```ini
-[FILTER]
-    Name    grep
-    Match   *
-    Exclude $kubernetes['namespace_name'] fluent-bit
-```
-
-Without this, each Fluent Bit log line about "shipped a log line" would itself generate a new log line — causing a recursive feedback loop that would overwhelm Elasticsearch.
-
----
 
 ### Q: What is the Lua filter doing in this pipeline?
 
@@ -224,46 +210,7 @@ api-gateway-2026.05.18  →  all api-gateway logs from yesterday
 
 Elasticsearch inverts the text (tokenises, stems, indexes every word), which is why full-text search across millions of logs is fast.
 
----
 
-### Q: What is an Elasticsearch Index Template and why does it matter?
-
-**Answer:**
-An index template defines the mapping (schema) and settings applied automatically to new indices that match a name pattern. Without a template, Elasticsearch uses dynamic mapping — it guesses field types. This can cause issues:
-
-- A field that sometimes has `"200"` (string) and sometimes `200` (integer) causes a **mapping conflict**
-- You cannot aggregate on a `text` field — you need a `keyword` sub-field
-
-Best practice: define an index template before Fluent Bit starts shipping:
-
-```json
-PUT _index_template/pharma-services
-{
-  "index_patterns": ["*-service-*", "api-gateway-*"],
-  "template": {
-    "mappings": {
-      "properties": {
-        "log": { "type": "text" },
-        "level": { "type": "keyword" },
-        "kubernetes.pod_name": { "type": "keyword" }
-      }
-    }
-  }
-}
-```
-
----
-
-### Q: What is the difference between `text` and `keyword` in Elasticsearch?
-
-**Answer:**
-
-| Type | Analysed? | Use for | Supports |
-|------|-----------|---------|---------|
-| `text` | Yes — tokenised, lowercased | Full-text search (`log`, `message`) | `match`, `multi_match` |
-| `keyword` | No — exact string | Filtering, aggregations, sorting | `term`, `terms`, `aggs` |
-
-Rule of thumb: use `keyword` for log levels, pod names, status codes. Use `text` for the log message body itself. Many fields get both via `fields.keyword`.
 
 ---
 
@@ -283,21 +230,6 @@ kubernetes.labels.app:"api-gateway" AND http.status_code:500
 
 Set the time filter to "Last 1 hour". The index pattern would be `api-gateway-*`.
 
----
-
-### Q: What is Index Lifecycle Management (ILM)?
-
-**Answer:**
-ILM automates managing index age and size through phases:
-
-```
-Hot phase   → active writes, fast storage (SSD)
-Warm phase  → less frequent queries, can reduce replicas
-Cold phase  → rare access, cheap storage
-Delete phase → delete after N days (e.g. 30 days)
-```
-
-In a production setup you would attach an ILM policy to the `pharma-services` index template so old log indices are automatically moved and deleted — preventing disk from filling up.
 
 ---
 
@@ -335,20 +267,7 @@ Any application can expose this — Spring Boot uses the `micrometer` library, N
 
 ---
 
-### Q: What are the four metric types in Prometheus?
 
-**Answer:**
-
-| Type | Description | Example |
-|------|-------------|---------|
-| **Counter** | Monotonically increasing number, never decreases | `http_requests_total`, `errors_total` |
-| **Gauge** | Can go up or down | `memory_usage_bytes`, `active_connections` |
-| **Histogram** | Samples observations in configurable buckets | `http_request_duration_seconds` |
-| **Summary** | Calculates configurable quantiles client-side | `rpc_duration_seconds{quantile="0.99"}` |
-
-Key interview trap: **you never `rate()` a gauge** — only counters. Rate calculates the per-second increase, which is meaningless for a value that can go down.
-
----
 
 ### Q: What is a ServiceMonitor and a PodMonitor?
 
@@ -456,17 +375,7 @@ ConfigMaps labelled grafana_dashboard: "1"
         → loaded into Grafana live (no restart needed)
 ```
 
-**Stream 2 — grafana.com download (Fluent Bit dashboard)**
-```
-prometheus-values.yaml: dashboards.default.fluent-bit.gnetId: 7752
-  → init container fetches dashboard JSON from grafana.com at pod startup
-    → written to /var/lib/grafana/dashboards/default/fluent-bit.json
-      → loaded under the "Pharma" folder
-```
 
-The key difference: sidecar dashboards update live; provider dashboards only load on restart.
-
----
 
 ### Q: Write a PromQL query for HTTP error rate as a percentage.
 
@@ -487,34 +396,7 @@ Breaking it down:
 
 ---
 
-### Q: What is the difference between `rate()` and `irate()` in PromQL?
 
-**Answer:**
-
-| | `rate()` | `irate()` |
-|-|----------|-----------|
-| Calculation | Average rate over the whole range | Rate of the last two data points only |
-| Best for | Dashboards (smoothed trend) | Alerting (catches sudden spikes) |
-| Handles counter resets | Yes | Yes |
-
-Example: if a pod suddenly starts throwing 1000 errors/sec for 10 seconds then recovers, `rate()[5m]` shows ~33 errors/sec (averaged over 5 min), while `irate()[5m]` shows the peak spike.
-
----
-
-### Q: Walk through the PromQL CPU usage query used in Node dashboards.
-
-**Answer:**
-```promql
-100 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100
-```
-
-1. `node_cpu_seconds_total{mode="idle"}` — counter: total seconds the CPU spent idle
-2. `rate(...[5m])` — converts to fraction of time idle per second (value between 0 and 1)
-3. `avg()` — averages across all CPU cores
-4. `* 100` — converts to percentage
-5. `100 - ...` — inverts idle % to get busy (used) %
-
----
 
 ## 6. Alertmanager
 
@@ -531,86 +413,7 @@ This separation means Prometheus can fire raw alerts at high frequency, while Al
 
 ---
 
-### Q: Explain the routing tree in Alertmanager.
 
-**Answer:**
-Routing is hierarchical. Every alert starts at the `route` root and cascades through child routes until one matches:
-
-```yaml
-route:
-  receiver: "slack-low-priority"     # default: everything goes here
-  group_wait: 30s
-  repeat_interval: 12h
-  routes:
-    - match:
-        severity: critical
-      receiver: "slack-sre-ops"      # critical alerts → #SRE_OPS channel
-      continue: false                # stop matching after this route
-    - match:
-        alertname: AlertmanagerNotificationFailed
-      receiver: "email-fallback"     # alertmanager failures → email
-```
-
-`group_wait: 30s` — wait 30 seconds to batch related alerts before sending the first notification.
-`continue: false` — once a route matches, stop evaluating further routes (default behaviour).
-
----
-
-### Q: What alert rules exist in this project and what do they fire on?
-
-**Answer:**
-
-**`crash-demo-alert.yaml`**
-```yaml
-alert: PodCrashLooping
-expr: rate(kube_pod_container_status_restarts_total[5m]) > 0
-for: 1m
-labels:
-  severity: critical
-```
-Fires when any pod has more than 0 restarts in the last 5 minutes, sustained for 1 minute. Designed for demo/testing of the Slack integration.
-
-**`alertmanager-notification-failure-alert.yaml`**
-```yaml
-alert: AlertmanagerNotificationFailed
-expr: increase(alertmanager_notifications_failed_total[5m]) > 0
-```
-Fires when Alertmanager itself fails to deliver a notification — a meta-alert that catches broken webhook URLs or Slack API failures. Critical for SRE on-call because a silent Alertmanager means you never know when something breaks.
-
----
-
-### Q: What is the difference between `for` and `group_wait` in Alertmanager config?
-
-**Answer:**
-
-| Setting | Where | Controls |
-|---------|-------|---------|
-| `for: 1m` | Prometheus alert rule | How long the condition must be true before Prometheus sends the alert to Alertmanager |
-| `group_wait: 30s` | Alertmanager route | How long Alertmanager waits after receiving the first alert before sending the notification (to batch related alerts) |
-
-`for` prevents noisy alerts from flapping conditions (a pod that restarts once and recovers should not page anyone). `group_wait` prevents a flood of individual notifications when 10 pods crash simultaneously.
-
----
-
-### Q: How would you set up a silence for a planned maintenance window?
-
-**Answer:**
-Via the Alertmanager UI or API:
-
-```bash
-# via amtool CLI
-amtool silence add \
-  --alertmanager.url=http://alertmanager:9093 \
-  --author="jane.doe" \
-  --comment="Planned maintenance - EKS node rotation" \
-  --start="2026-05-20T02:00:00Z" \
-  --end="2026-05-20T04:00:00Z" \
-  alertname=~".*"
-```
-
-Or via the Alertmanager web UI: Silences → New Silence → add matchers → set time window.
-
----
 
 ## 7. Kubernetes Logging Architecture
 
@@ -662,24 +465,7 @@ The SQLite DB (`/var/log/fluentbit-db/flb_kube.db`) persists positions across Fl
 
 ---
 
-### Q: What log formats does Fluent Bit parse for Kubernetes?
 
-**Answer:**
-Two formats depending on the container runtime:
-
-**Docker (older):**
-```json
-{"log":"2026-05-19 INFO api-gateway started\n","stream":"stdout","time":"2026-05-19T10:00:00Z"}
-```
-
-**CRI (containerd, used by EKS AL2023):**
-```
-2026-05-19T10:00:00.000000000Z stdout F 2026-05-19 INFO api-gateway started
-```
-
-Fluent Bit's built-in `cri` parser handles both. The `docker` parser handles the JSON wrapper. The Kubernetes filter further enriches with metadata from the Kubernetes API.
-
----
 
 ## 8. GitOps & ArgoCD for Observability
 
@@ -711,45 +497,7 @@ This means every change to Grafana dashboards, alert rules, or Fluent Bit config
 
 ---
 
-### Q: Why is the Elasticsearch API key stored as a Kubernetes Secret rather than in the Helm values file?
 
-**Answer:**
-Three reasons:
-1. **Security** — secrets in Git (even base64-encoded) are visible to anyone with repo access and are captured in git history forever
-2. **GitOps hygiene** — the `zen-gitops` repo is designed to be forked and shared; it must not contain real credentials
-3. **Rotation** — when the API key expires, you update the Secret with `kubectl create secret ... --dry-run | kubectl apply` without touching Git or triggering an ArgoCD sync
-
-The Helm chart references the secret by name. ArgoCD manages the Deployment/DaemonSet; the Secret is managed out-of-band (or via External Secrets Operator in a mature setup).
-
----
-
-### Q: What is the External Secrets Operator and how would you use it here?
-
-**Answer:**
-The External Secrets Operator (ESO) syncs secrets from external vaults (AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager) into Kubernetes Secrets. Instead of manually creating the Fluent Bit secret with kubectl, you would:
-
-```yaml
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: fluent-bit-elastic-credentials
-  namespace: dev
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: aws-secrets-manager
-    kind: ClusterSecretStore
-  target:
-    name: fluent-bit-elastic-credentials
-  data:
-    - secretKey: api_key
-      remoteRef:
-        key: pharma/dev/elastic-api-key
-```
-
-ESO then automatically creates and rotates the Kubernetes Secret from AWS Secrets Manager. The `k8s/external-secrets/` directory in this repo already has the `ClusterSecretStore` setup.
-
----
 
 ## 9. Scenario-Based Questions
 
@@ -875,90 +623,3 @@ Also consider:
 
 ---
 
-## 10. System Design Questions
-
-### Q: Design a logging pipeline for a 50-service microservices platform at 1M log lines/minute.
-
-**Answer (sketch):**
-
-```
-Each EKS node
-  └── Fluent Bit DaemonSet
-       ├── Buffers to disk (not just memory) for backpressure
-       └── Outputs to Kafka (not directly to Elasticsearch)
-
-Kafka cluster (3 brokers, topic per env)
-  └── Logstash / Kafka Connect consumers
-       ├── Parse, enrich, filter
-       └── Bulk index to Elasticsearch
-
-Elasticsearch cluster (dedicated hot/warm/cold tiers)
-  ├── Hot nodes (NVMe SSDs) — last 7 days
-  ├── Warm nodes (HDDs) — 7-30 days
-  └── Cold tier / S3 snapshot — 30-365 days
-
-ILM policies auto-transition indices
-```
-
-Why Kafka in the middle:
-- Decouples producers (Fluent Bit) from consumers (Elasticsearch)
-- Elasticsearch backpressure during high load does not cause Fluent Bit to drop logs
-- Multiple consumers can read from the same topic (analytics, alerting, archival)
-- Replay capability if Elasticsearch is down
-
----
-
-### Q: How would you implement log-based alerting (alerting on log patterns)?
-
-**Answer:**
-Two approaches:
-
-**Option A — Elasticsearch → ElastAlert 2 (log-native)**
-```
-Elasticsearch → ElastAlert2 polls for query matches → Slack / PagerDuty
-```
-ElastAlert2 runs queries (e.g. `level:ERROR AND service:auth-service`) on a schedule and fires when match count exceeds a threshold.
-
-**Option B — Loki + Grafana (metrics from logs)**
-```
-Fluent Bit → Loki (instead of/alongside Elasticsearch)
-Loki → LogQL → Grafana Alerts → Alertmanager
-```
-Loki stores logs and exposes them via LogQL. Grafana can create alert rules on log queries (e.g. `count_over_time({app="api-gateway"} |= "ERROR"[5m]) > 10`). These feed into the same Alertmanager already running.
-
-Option B integrates better with the existing Prometheus/Grafana/Alertmanager stack used in this project.
-
----
-
-## 11. Quick-Fire Q&A Cheat Sheet
-
-| Question | Answer |
-|----------|--------|
-| What port does Prometheus use by default? | `9090` |
-| What port does Alertmanager use? | `9093` |
-| What port does Grafana use? | `3000` |
-| What port does Fluent Bit metrics use? | `2020` |
-| What port does Node Exporter use? | `9100` |
-| What is the default Prometheus scrape interval? | `15s` |
-| What format do Prometheus metrics use? | OpenMetrics / Prometheus text format |
-| What is a label in Prometheus? | A key-value pair that adds dimensions to a metric |
-| What does `rate()` do? | Calculates per-second increase of a counter over a range |
-| What does `increase()` do? | Total increase of a counter over a range (rate × range seconds) |
-| What does `sum by()` do? | Aggregates a metric summed by a label dimension |
-| Can you rate() a gauge? | No — only counters (gauges can decrease) |
-| What is a counter reset? | When a counter restarts from 0 (pod restart); `rate()` handles this |
-| What is Loki? | Grafana's log aggregation system — indexes labels only, not log content |
-| What is TSDB? | Time Series Database — how Prometheus stores metrics on disk |
-| What does `on:` do in PromQL? | Joins two metrics on specific labels only |
-| What is `absent()` used for? | Alert when a metric stops being reported (e.g. pod disappears) |
-| What is a Grafana provisioning path? | File-based config loaded at startup; changes need a restart |
-| What is the Grafana sidecar? | Container that watches ConfigMaps and loads dashboards live |
-| How do you rotate an Elastic API key without downtime? | Create new key → update secret → rolling restart Fluent Bit DaemonSet |
-| What is `retentionSize` in Prometheus? | Max disk usage before oldest data is deleted; prevents PVC full |
-| What is `group_by` in Alertmanager? | Groups alerts with the same label values into one notification |
-| What does `send_resolved: true` do? | Sends a follow-up notification when the alert stops firing |
-| What is a DaemonSet good for? | Running exactly one pod per node — perfect for log collectors and metrics agents |
-
----
-
-> **Interview tip:** When asked about a tool, always connect it to a real problem it solves. For example: "Fluent Bit runs as a DaemonSet because logs live on the node filesystem, and we need one collector per node to guarantee full coverage — a Deployment would leave some nodes uncovered."
