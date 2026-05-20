@@ -12,7 +12,7 @@ metadata:
 spec:
   project: pharma
   source:
-    repoURL: https://github.com/ravdy/zen-gitops.git
+    repoURL: https://github.com/DPP-2026/zen-gitops.git
     targetRevision: HEAD
     path: helm-charts
     helm:
