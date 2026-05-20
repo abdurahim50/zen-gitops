@@ -15,7 +15,7 @@
 | 5 | Secrets in Helm | Concept + code | 10 min |
 | 6 | NGINX Ingress in Helm | Concept + code | 5 min |
 | 7 | Live demo: Git push → ArgoCD sync | Demo | 20 min |
-| Q&A | — | — | 15 min |
+| Q&A | — | — | 5 min |
 
 ---
 
@@ -38,7 +38,7 @@
 ### Transition
 
 Helm solves this with **one template + one values file per service per environment**.
-27 values files replace ~126 raw manifest files — and all templating is centralized.
+25 values files replace ~126 raw manifest files — and all templating is centralized.
 
 ---
 
@@ -88,11 +88,11 @@ maintainers:
 ```
 envs/
 ├── dev/   (9 values files)
-├── qa/    (9 values files)
-└── prod/  (9 values files)
+├── qa/    (8 values files)
+└── prod/  (8 values files)
 ```
 
-**27 values files replace ~126 raw manifest files.**
+**25 values files replace ~126 raw manifest files.**
 
 ---
 
@@ -382,15 +382,15 @@ zen-gitops/
 │   │   ├── values-drug-catalog-service.yaml
 │   │   └── ... (9 files total)
 │   ├── qa/
-│   │   └── ... (9 files)
+│   │   └── ... (8 files)
 │   └── prod/
-│       └── ... (9 files)
+│       └── ... (8 files)
 │
 ├── argocd/
 │   ├── apps/
 │   │   ├── dev/                     ← 9 ArgoCD Application CRDs
-│   │   ├── qa/                      ← 9 ArgoCD Application CRDs
-│   │   └── prod/                    ← 11 ArgoCD Application CRDs
+│   │   ├── qa/                      ← 8 ArgoCD Application CRDs
+│   │   └── prod/                    ← 8 ArgoCD Application CRDs
 │   ├── install/                     ← ArgoCD install manifests
 │   └── projects/
 │       └── pharma-project.yaml      ← AppProject RBAC boundary
@@ -691,7 +691,7 @@ Expected diff:
 Within ~3 minutes (or immediately after `--refresh`):
 
 ```bash
-argocd app get api-gateway-dev -w
+argocd app wait api-gateway-dev --health --sync
 kubectl get pods -n dev -l app=api-gateway
 kubectl describe pod -n dev -l app=api-gateway | grep "Image:"
 ```
