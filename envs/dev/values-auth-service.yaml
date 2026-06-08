@@ -2,7 +2,7 @@ replicaCount: 1
 fullnameOverride: auth-service
 image:
   repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/auth-service
-  tag: sha-52e2dd1
+  tag: sha-c1eb21e
   pullPolicy: Always
 service:
   type: ClusterIP
