@@ -142,9 +142,11 @@ git push
 
 | Setting | dev | qa | prod |
 |---|---|---|---|
-| `replicaCount` | 1 | 1 | 2 |
+| `replicaCount` | 1 | 1 | HPA-managed (min 2) |
 | `autoscaling.minReplicas` | disabled | 1 | 2 |
 | `autoscaling.maxReplicas` | disabled | 3 | 5 |
+| `podDisruptionBudget` | disabled | disabled | enabled (`minAvailable: 1`) |
+| `networkPolicy` | disabled | disabled | enabled (ingress from NGINX or api-gateway) |
 | `LOG_LEVEL` | DEBUG | INFO | WARN |
 | `podAntiAffinity` | no | no | yes (pods spread across nodes) |
 | CPU request/limit | 100m / 500m | 150m / 500m | 250m / 1000m |

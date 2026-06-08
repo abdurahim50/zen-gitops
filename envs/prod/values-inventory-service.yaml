@@ -1,5 +1,3 @@
-replicaCount: 2
-
 fullnameOverride: inventory-service
 
 image:
@@ -32,6 +30,19 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  allowFromIngressController: false
+  allowFromApiGateway: true
+  ingressControllerNamespace: ingress-nginx
+  ingressControllerPodLabels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller
 
 livenessProbe:
   path: /actuator/health

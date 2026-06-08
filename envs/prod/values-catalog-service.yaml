@@ -1,5 +1,3 @@
-replicaCount: 2
-
 # fullnameOverride ensures the Kubernetes service name matches the service directory name
 # and matches the default URL expected by api-gateway
 fullnameOverride: drug-catalog-service
@@ -34,6 +32,19 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  allowFromIngressController: false
+  allowFromApiGateway: true
+  ingressControllerNamespace: ingress-nginx
+  ingressControllerPodLabels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller
 
 livenessProbe:
   path: /actuator/health

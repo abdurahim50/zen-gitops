@@ -16,3 +16,8 @@ Thumbs.db
 
 # Trainer-only design specs
 docs/superpowers/
+
+# Trainer-only — training deck tooling (not for learners)
+scripts/add_k8s_slides.py
+scripts/__pycache__/
+**/*.pptx

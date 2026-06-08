@@ -1,4 +1,3 @@
-replicaCount: 1
 fullnameOverride: pharma-ui
 image:
   repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/pharma-ui
@@ -25,10 +24,23 @@ resources:
     cpu: 200m
     memory: 128Mi
 autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 3
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+networkPolicy:
+  enabled: true
+  allowFromIngressController: true
+  allowFromApiGateway: false
+  ingressControllerNamespace: ingress-nginx
+  ingressControllerPodLabels:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/component: controller
 livenessProbe:
   path: /
   port: 80
