@@ -1,24 +1,19 @@
 replicaCount: 1
-
 fullnameOverride: supplier-service
-
 image:
   repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/supplier-service
-  tag: sha-ef1ccc7
+  tag: sha-edad41e
   pullPolicy: Always
-
 service:
   type: ClusterIP
   port: 8084
   targetPort: 8084
-
 ingress:
   enabled: false
   className: nginx
   host: qa.pharma.internal
   path: /suppliers
   pathType: Prefix
-
 resources:
   requests:
     cpu: 100m
@@ -26,13 +21,11 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
-
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 70
-
 livenessProbe:
   path: /actuator/health
   port: 8084
@@ -41,7 +34,6 @@ livenessProbe:
   timeoutSeconds: 5
   failureThreshold: 3
   successThreshold: 1
-
 readinessProbe:
   path: /actuator/health/readiness
   port: 8084
@@ -50,26 +42,21 @@ readinessProbe:
   timeoutSeconds: 5
   failureThreshold: 3
   successThreshold: 1
-
 configmap:
   SPRING_PROFILES_ACTIVE: qa
   DB_HOST: <RDS_ENDPOINT>
   LOG_LEVEL: INFO
   SERVER_PORT: "8084"
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
-
 envFrom:
   - secretRef:
       name: db-credentials
-
 volumeMounts:
   - name: tmp
     mountPath: /tmp
-
 volumes:
   - name: tmp
     emptyDir: {}
-
 serviceAccount:
   create: true
   annotations: {}
