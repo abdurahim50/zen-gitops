@@ -14,7 +14,7 @@ spec:
 
   source:
     # Replace 'DPP-2026' with your GitHub username after forking zen-gitops
-    repoURL: https://github.com/DPP-2026/zen-gitops.git
+    repoURL: https://github.com/abdurahim50/zen-gitops.git
     targetRevision: HEAD
     path: helm-charts
     helm:
