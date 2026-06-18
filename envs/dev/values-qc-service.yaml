@@ -1,7 +1,7 @@
 replicaCount: 1
 fullnameOverride: qc-service
 image:
-  repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/qc-service
+  repository: 069279771141.dkr.ecr.us-east-1.amazonaws.com/qc-service
   tag: sha-079d470
   pullPolicy: Always
 service:

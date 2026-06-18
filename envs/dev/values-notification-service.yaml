@@ -1,7 +1,7 @@
 replicaCount: 1
 fullnameOverride: notification-service
 image:
-  repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/notification-service
+  repository: 069279771141.dkr.ecr.us-east-1.amazonaws.com/notification-service
   tag: sha-079d470
   pullPolicy: Always
 service:

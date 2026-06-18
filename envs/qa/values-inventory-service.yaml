@@ -3,7 +3,7 @@ replicaCount: 1
 fullnameOverride: inventory-service
 
 image:
-  repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/inventory-service
+  repository: 069279771141.dkr.ecr.us-east-1.amazonaws.com/inventory-service
   tag: sha-ef1ccc7
   pullPolicy: Always
 

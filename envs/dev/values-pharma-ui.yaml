@@ -1,7 +1,7 @@
 replicaCount: 1
 fullnameOverride: pharma-ui
 image:
-  repository: 516209541629.dkr.ecr.us-east-1.amazonaws.com/pharma-ui
+  repository: 069279771141.dkr.ecr.us-east-1.amazonaws.com/pharma-ui
   tag: aa46dfb31c4a8a2977399b28e6fe49ec82f25ced
   pullPolicy: Always
 service:
