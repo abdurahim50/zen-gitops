@@ -64,7 +64,7 @@ data:
         Port                 {{ .Values.elasticsearch.port }}
         TLS                  {{ if .Values.elasticsearch.tls }}On{{ else }}Off{{ end }}
         TLS.Verify           On
-        api_key              ${ELASTIC_API_KEY}
+        http_api_key         ${ELASTIC_API_KEY}
         Logstash_Format      On
         Logstash_Prefix_Key  _service_name
         Logstash_Prefix      {{ .Values.fluentbit.filterNamespace }}-service
