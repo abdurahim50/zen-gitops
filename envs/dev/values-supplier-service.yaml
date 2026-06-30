@@ -44,7 +44,7 @@ readinessProbe:
   successThreshold: 1
 configmap:
   SPRING_PROFILES_ACTIVE: dev
-  DB_HOST: pharma-dev-postgres.cyrywaguk6v4.us-east-1.rds.amazonaws.com
+  DB_HOST: pharma-dev-postgres.csherysgdn4i.us-east-1.rds.amazonaws.com
   LOG_LEVEL: DEBUG
   SERVER_PORT: "8084"
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics,prometheus"
