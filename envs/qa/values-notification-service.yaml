@@ -1,24 +1,19 @@
 replicaCount: 1
-
 fullnameOverride: notification-service
-
 image:
   repository: 069279771141.dkr.ecr.us-east-1.amazonaws.com/notification-service
-  tag: sha-ef1ccc7
+  tag: sha-59f6676
   pullPolicy: Always
-
 service:
   type: ClusterIP
   port: 3000
   targetPort: 3000
-
 ingress:
   enabled: false
   className: nginx
   host: qa.pharma.internal
   path: /notifications
   pathType: Prefix
-
 resources:
   requests:
     cpu: 50m
@@ -26,13 +21,11 @@ resources:
   limits:
     cpu: 200m
     memory: 256Mi
-
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 70
-
 livenessProbe:
   path: /actuator/health
   port: 3000
@@ -41,7 +34,6 @@ livenessProbe:
   timeoutSeconds: 5
   failureThreshold: 3
   successThreshold: 1
-
 readinessProbe:
   path: /actuator/health/readiness
   port: 3000
@@ -50,7 +42,6 @@ readinessProbe:
   timeoutSeconds: 5
   failureThreshold: 3
   successThreshold: 1
-
 configmap:
   NODE_ENV: qa
   PORT: "3000"
@@ -59,11 +50,9 @@ configmap:
   SMTP_PORT: "587"
   EMAIL_FROM: "noreply-qa@example.com"
   DB_HOST: pharma-qa-postgres.cs3c424yurej.us-east-1.rds.amazonaws.com
-
 envFrom:
   - secretRef:
       name: db-credentials
-
 serviceAccount:
   create: true
   annotations: {}
