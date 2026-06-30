@@ -9,7 +9,7 @@ spec:
   description: Pharma microservices project
 
   sourceRepos:
-    # Replace 'ravdy' with your GitHub username after forking zen-gitops
+    # Replace 'abdurahim50' with your GitHub username after forking zen-gitops
     - "https://github.com/DPP-2026/zen-gitops.git"
     - "https://charts.helm.sh/stable"
     - "https://prometheus-community.github.io/helm-charts"
